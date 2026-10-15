@@ -56,6 +56,7 @@
   'use strict';
   const input=document.getElementById('spotify'),status=document.getElementById('status'),resultBlock=document.getElementById('resultBlock'),result=document.getElementById('result'),postX=document.getElementById('postX'),copy=document.getElementById('copy'),clear=document.getElementById('clear');
   const allowed=new Set(['track','album','playlist','artist','show','episode']);
+
   function normalizeSpotify(raw){
     const value=raw.trim(); if(!value)return null;
     const uri=value.match(/^spotify:(track|album|playlist|artist|show|episode):([A-Za-z0-9]+)$/i);
@@ -68,22 +69,74 @@
     if(!allowed.has(type)||!/^[A-Za-z0-9]+$/.test(id))throw new Error('Try a Spotify track, album, playlist, artist, show, or episode.');
     return `https://open.spotify.com/${type}/${id}`;
   }
-  function wrap(canonical){const e=encodeURIComponent(canonical);return `https://spotify.link/content_linking?$deeplink_path=${e}&$fallback_url=${e}`;}
+
+  function wrap(canonical){
+    const e=encodeURIComponent(canonical);
+    return `https://spotify.link/content_linking?$deeplink_path=${e}&$fallback_url=${e}`;
+  }
+
   function render(){
     status.className='status';
     try{
       const canonical=normalizeSpotify(input.value);
       if(!canonical){resultBlock.hidden=true;result.value='';status.textContent='Paste a link to begin.';return;}
-      const out=wrap(canonical); result.value=out; postX.href=`https://x.com/intent/post?text=${encodeURIComponent(out)}`;
-      resultBlock.hidden=false; status.textContent='Ready.';
-    }catch(err){resultBlock.hidden=true;result.value='';status.className='status error';status.textContent=err.message||'Could not convert that link.';}
+      const out=wrap(canonical);
+      result.value=out;
+      postX.href=`https://x.com/intent/post?text=${encodeURIComponent(out)}`;
+      resultBlock.hidden=false;
+      status.textContent='Ready.';
+    }catch(err){
+      resultBlock.hidden=true;result.value='';status.className='status error';status.textContent=err.message||'Could not convert that link.';
+    }
   }
-  async function copyText(text){if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);return true;}return false;}
-  input.addEventListener('input',render); input.addEventListener('paste',()=>setTimeout(render,0));
-  copy.addEventListener('click',async()=>{if(!result.value)return;try{if(!(await copyText(result.value)))throw new Error();const old=copy.textContent;copy.textContent='Copied!';setTimeout(()=>copy.textContent=old,1100);status.textContent='Copied — now use the fresh-text + Space refresh in X.';}catch{result.focus();result.select();status.textContent='Clipboard is blocked here, so the link is selected. Copy it with your device shortcut.';}});
+
+  function legacyCopy(textarea){
+    try{
+      textarea.focus();
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+      return document.execCommand && document.execCommand('copy');
+    }catch{return false;}
+  }
+
+  async function copyGenerated(){
+    if(!result.value)return;
+    let copied=false;
+
+    try{
+      if(navigator.clipboard && window.isSecureContext){
+        await navigator.clipboard.writeText(result.value);
+        copied=true;
+      }
+    }catch{}
+
+    if(!copied) copied=legacyCopy(result);
+
+    if(copied){
+      const old=copy.textContent;
+      copy.textContent='Copied!';
+      status.className='status';
+      status.textContent='Copied — now paste into X and use the fresh-text + Space refresh.';
+      setTimeout(()=>copy.textContent=old,1200);
+    }else{
+      result.focus();
+      result.select();
+      result.setSelectionRange(0,result.value.length);
+      copy.textContent='Selected';
+      status.className='status';
+      status.textContent='X blocked clipboard access, so the full generated link is selected. Press Ctrl+C / Cmd+C.';
+      setTimeout(()=>copy.textContent='Copy link',1800);
+    }
+  }
+
+  input.addEventListener('input',render);
+  input.addEventListener('paste',()=>setTimeout(render,0));
+  copy.addEventListener('click',copyGenerated);
   clear.addEventListener('click',()=>{input.value='';result.value='';resultBlock.hidden=true;status.className='status';status.textContent='Paste a link to begin.';input.focus();});
   postX.addEventListener('click',()=>{status.textContent='In X: type fresh text directly before https, then press Space once.';});
-  const preset=new URLSearchParams(location.search).get('url'); if(preset){input.value=preset;render();}
+
+  const preset=new URLSearchParams(location.search).get('url');
+  if(preset){input.value=preset;render();}
 })();
 </script>
 </body>
