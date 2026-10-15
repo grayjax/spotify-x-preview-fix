@@ -3,42 +3,39 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Convert a Spotify link into a Spotify content-linking URL that X is more likely to unfurl.">
+  <meta name="description" content="Fix Spotify link previews on X with a no-login, no-tracking converter.">
   <meta name="referrer" content="no-referrer">
   <meta name="robots" content="index,follow">
   <meta name="theme-color" content="#0b0b0b">
-
   <meta name="twitter:card" content="player">
   <meta name="twitter:site" content="@bintcrubbs">
   <meta name="twitter:creator" content="@bintcrubbs">
-  <meta name="twitter:title" content="Spotify → X Preview Fix">
-  <meta name="twitter:description" content="Paste a Spotify link and generate a version that X is more likely to preview.">
-  <meta name="twitter:image" content="https://grayjax.github.io/spotify-x-preview-fix/preview.png">
-  <meta name="twitter:player" content="https://grayjax.github.io/spotify-x-preview-fix/embed.html">
+  <meta name="twitter:title" content="Spotify link not previewing on X?">
+  <meta name="twitter:description" content="Click to fix it. Paste your Spotify link and get a preview-friendly version.">
+  <meta name="twitter:image" content="https://grayjax.github.io/spotify-x-preview-fix/preview.png?v=3">
+  <meta name="twitter:player" content="https://grayjax.github.io/spotify-x-preview-fix/embed.html?v=3">
   <meta name="twitter:player:width" content="480">
   <meta name="twitter:player:height" content="480">
-
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://grayjax.github.io/spotify-x-preview-fix/">
-  <meta property="og:title" content="Spotify → X Preview Fix">
-  <meta property="og:description" content="Paste a Spotify link and generate a version that X is more likely to preview.">
-  <meta property="og:image" content="https://grayjax.github.io/spotify-x-preview-fix/preview.png">
-
+  <meta property="og:title" content="Spotify link not previewing on X?">
+  <meta property="og:description" content="Click to fix it. Paste your Spotify link and get a preview-friendly version.">
+  <meta property="og:image" content="https://grayjax.github.io/spotify-x-preview-fix/preview.png?v=3">
   <title>Spotify → X Preview Fix</title>
   <style>
-    :root{color-scheme:dark;--bg:#0b0b0b;--panel:#151515;--text:#f5f5f5;--muted:#a7a7a7;--border:#2c2c2c;--accent:#1ed760;--focus:rgba(30,215,96,.22)}
+    :root{color-scheme:dark;--bg:#0b0b0b;--panel:#151515;--text:#f5f5f5;--muted:#a7a7a7;--border:#2c2c2c;--accent:#1ed760}
     *{box-sizing:border-box}html{background:var(--bg)}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 50% -10%,rgba(30,215,96,.09),transparent 34rem),var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    main{width:min(760px,100%)}.card{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:clamp(22px,4vw,32px)}.eyebrow{display:flex;align-items:center;gap:8px;color:#bbb;font-size:13px;font-weight:700;margin-bottom:12px}.dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(30,215,96,.08)}h1{font-size:clamp(30px,6vw,44px);line-height:1.05;letter-spacing:-.04em;margin:0 0 10px}.lead{color:var(--muted);margin:0 0 24px}iframe{display:block;width:100%;height:500px;border:1px solid var(--border);border-radius:16px;background:#0b0b0b}.note{margin-top:14px;color:#777;font-size:12px;text-align:center}
+    main{width:min(760px,100%)}.card{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:clamp(20px,4vw,30px)}.eyebrow{display:flex;align-items:center;gap:8px;color:#bbb;font-size:13px;font-weight:700;margin-bottom:10px}.dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(30,215,96,.08)}h1{font-size:clamp(28px,6vw,42px);line-height:1.05;letter-spacing:-.04em;margin:0 0 8px}.lead{color:var(--muted);margin:0 0 18px}iframe{display:block;width:100%;height:450px;border:1px solid var(--border);border-radius:16px;background:#0b0b0b}.note{margin-top:12px;color:#777;font-size:11px;text-align:center}
   </style>
 </head>
 <body>
   <main>
     <section class="card">
-      <div class="eyebrow"><span class="dot"></span> X Player Card trial</div>
-      <h1>Spotify → X Preview Fix</h1>
-      <p class="lead">The same no-login, no-tracking converter — packaged so X can attempt to render the interface directly inside a post.</p>
-      <iframe src="embed.html" title="Spotify to X preview link converter" loading="eager"></iframe>
-      <div class="note">No cookies · no analytics · no backend · not affiliated with Spotify or X</div>
+      <div class="eyebrow"><span class="dot"></span> Spotify → X</div>
+      <h1>Fix a Spotify preview</h1>
+      <p class="lead">Paste a Spotify link, generate the X-friendly version, and post it without leaving the flow.</p>
+      <iframe src="embed.html?v=3" title="Spotify to X preview link converter" loading="eager"></iframe>
+      <div class="note">No login · no tracking · nothing stored · not affiliated with Spotify or X</div>
     </section>
   </main>
 </body>
