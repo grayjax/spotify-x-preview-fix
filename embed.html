@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="dark">
+  <title>Spotify → X Link Fix</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg:#0b0b0b; --panel:#151515; --panel2:#101010; --text:#f5f5f5;
+      --muted:#a7a7a7; --border:#2c2c2c; --accent:#1ed760; --accent2:#2de26d;
+      --error:#ff7a7a; --focus:rgba(30,215,96,.22);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{padding:16px}
+    .app{max-width:640px;margin:0 auto}
+    .top{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(30,215,96,.08)}
+    h1{font-size:21px;line-height:1.1;letter-spacing:-.025em;margin:0}
+    .sub{margin:5px 0 14px;color:var(--muted);font-size:13px}
+    label{display:block;font-weight:700;font-size:13px;margin:0 0 7px}
+    input,textarea{width:100%;background:#0e0e0e;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:12px 13px;outline:none;font:inherit}
+    input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--focus)}
+    textarea{min-height:74px;resize:none;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;overflow-wrap:anywhere}
+    .status{min-height:20px;margin:7px 0 0;color:var(--muted);font-size:12px}
+    .status.error{color:var(--error)}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    button,a.button{appearance:none;border:0;border-radius:999px;padding:10px 14px;min-height:42px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font:700 14px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer;background:var(--accent);color:#000}
+    button:hover,a.button:hover{background:var(--accent2)}
+    button.secondary,a.secondary{background:#232323;color:var(--text);border:1px solid var(--border)}
+    button:disabled,a[aria-disabled="true"]{opacity:.45;pointer-events:none}
+    .guide{margin-top:12px;border:1px solid rgba(30,215,96,.30);background:rgba(30,215,96,.055);border-radius:12px;padding:11px 12px;color:#c6c6c6;font-size:12px}
+    .guide strong{color:var(--text)}
+    .demo{margin-top:7px;background:#0d0d0d;border:1px solid var(--border);border-radius:9px;padding:8px 9px;font:11px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-wrap:anywhere;color:#ddd}
+    .trust{margin-top:10px;color:#767676;font-size:10.5px;text-align:center}
+    @media(max-width:460px){body{padding:12px}.actions>*{flex:1 1 calc(50% - 4px)}h1{font-size:19px}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="top"><span class="dot" aria-hidden="true"></span><h1>Spotify → X Preview Fix</h1></div>
+    <p class="sub">Paste a Spotify song or playlist link. Everything is converted locally in your browser.</p>
+
+    <label for="spotify">Spotify link</label>
+    <input id="spotify" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://open.spotify.com/playlist/…">
+    <div id="status" class="status" role="status" aria-live="polite">Paste a link to begin.</div>
+
+    <div id="resultBlock" hidden>
+      <label for="result">Generated X-friendly link</label>
+      <textarea id="result" readonly></textarea>
+      <div class="actions">
+        <a id="postX" class="button" href="#" target="_blank" rel="noopener noreferrer">Post on X</a>
+        <button id="copy" class="secondary" type="button">Copy link</button>
+        <button id="select" class="secondary" type="button">Select link</button>
+        <button id="clear" class="secondary" type="button">Clear</button>
+      </div>
+      <div class="guide">
+        <strong>Important refresh step:</strong> when X opens, put the cursor immediately before <code>https</code>. Type your caption so the new text touches the URL, then press <strong>Space once</strong> to separate them. In our testing, that fresh typing + new boundary is what consistently triggers X to fetch the preview.
+        <div class="demo">my captionhttps://spotify.link/… → my caption https://spotify.link/…</div>
+      </div>
+    </div>
+
+    <div class="trust">No login · no cookies · no analytics · no backend · not affiliated with Spotify or X</div>
+  </main>
+
+<script>
+(() => {
+  'use strict';
+  const input = document.getElementById('spotify');
+  const status = document.getElementById('status');
+  const resultBlock = document.getElementById('resultBlock');
+  const result = document.getElementById('result');
+  const postX = document.getElementById('postX');
+  const copy = document.getElementById('copy');
+  const select = document.getElementById('select');
+  const clear = document.getElementById('clear');
+  const allowed = new Set(['track','album','playlist','artist','show','episode']);
+
+  function normalizeSpotify(raw){
+    const value = raw.trim();
+    if(!value) return null;
+    const uri = value.match(/^spotify:(track|album|playlist|artist|show|episode):([A-Za-z0-9]+)$/i);
+    if(uri) return `https://open.spotify.com/${uri[1].toLowerCase()}/${uri[2]}`;
+    let u;
+    try{ u = new URL(value); } catch { throw new Error('Paste a valid Spotify URL.'); }
+    if(!['open.spotify.com','play.spotify.com'].includes(u.hostname)) throw new Error('Use an open.spotify.com link.');
+    const p = u.pathname.split('/').filter(Boolean);
+    let i=0;
+    if(p[i] && p[i].startsWith('intl-')) i++;
+    if(p[i] === 'embed') i++;
+    const type=(p[i]||'').toLowerCase(), id=p[i+1]||'';
+    if(!allowed.has(type) || !/^[A-Za-z0-9]+$/.test(id)) throw new Error('Try a Spotify track, album, playlist, artist, show, or episode.');
+    return `https://open.spotify.com/${type}/${id}`;
+  }
+
+  function wrap(canonical){
+    const e = encodeURIComponent(canonical);
+    return `https://spotify.link/content_linking?$deeplink_path=${e}&$fallback_url=${e}`;
+  }
+
+  function render(){
+    status.className='status';
+    try{
+      const canonical=normalizeSpotify(input.value);
+      if(!canonical){
+        resultBlock.hidden=true; result.value=''; status.textContent='Paste a link to begin.'; return;
+      }
+      const out=wrap(canonical);
+      result.value=out;
+      postX.href=`https://x.com/intent/post?text=${encodeURIComponent(out)}`;
+      resultBlock.hidden=false;
+      status.textContent='Ready — Spotify share parameters were cleaned automatically.';
+    }catch(err){
+      resultBlock.hidden=true; result.value=''; status.className='status error'; status.textContent=err.message || 'Could not convert that link.';
+    }
+  }
+
+  async function copyText(text){
+    if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(text); return true; }
+    return false;
+  }
+
+  input.addEventListener('input', render);
+  input.addEventListener('paste', () => setTimeout(render,0));
+  copy.addEventListener('click', async () => {
+    if(!result.value) return;
+    try{
+      const ok=await copyText(result.value);
+      if(!ok) throw new Error();
+      const old=copy.textContent; copy.textContent='Copied!'; setTimeout(()=>copy.textContent=old,1100);
+      status.className='status'; status.textContent='Copied. Paste into X, type fresh text directly before https, then press Space.';
+    }catch{
+      result.focus(); result.select(); result.setSelectionRange(0,result.value.length);
+      status.className='status'; status.textContent='Clipboard is blocked in this embed, so the link is selected. Copy it with your device shortcut.';
+    }
+  });
+  select.addEventListener('click', () => { result.focus(); result.select(); result.setSelectionRange(0,result.value.length); status.className='status'; status.textContent='Link selected.'; });
+  clear.addEventListener('click', () => { input.value=''; result.value=''; resultBlock.hidden=true; status.className='status'; status.textContent='Paste a link to begin.'; input.focus(); });
+  postX.addEventListener('click', () => { status.className='status'; status.textContent='In X: type fresh text directly before https, then press Space to separate it and wait for the artwork.'; });
+
+  const preset = new URLSearchParams(location.search).get('url');
+  if(preset){ input.value=preset; render(); }
+})();
+</script>
+</body>
+</html>
