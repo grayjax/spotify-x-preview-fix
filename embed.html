@@ -16,7 +16,7 @@
     input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--focus)}
     textarea{min-height:58px;resize:none;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10.5px;overflow-wrap:anywhere}
     .status{min-height:18px;margin:6px 0 0;color:var(--muted);font-size:11px}.status.error{color:var(--error)}
-    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+    .mode{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:2px 0 10px}.mode input{position:absolute;opacity:0;pointer-events:none}.mode label{margin:0;border:1px solid var(--border);border-radius:11px;padding:8px 9px;background:#111;cursor:pointer;font-weight:600}.mode label strong{display:block;font-size:11px}.mode label span{display:block;color:var(--muted);font-size:9.5px;font-weight:500;margin-top:2px}.mode input:checked+label{border-color:var(--accent);background:rgba(30,215,96,.08);box-shadow:0 0 0 2px var(--focus)}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
     button,a.button{appearance:none;border:0;border-radius:999px;padding:10px 15px;min-height:40px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font:700 13px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer;background:var(--accent);color:#000}
     button:hover,a.button:hover{background:var(--accent2)}button.secondary{background:#232323;color:var(--text);border:1px solid var(--border)}
     .guide{margin-top:10px;border:1px solid rgba(30,215,96,.30);background:rgba(30,215,96,.055);border-radius:11px;padding:9px 10px;color:#c6c6c6;font-size:11px}
@@ -35,17 +35,20 @@
     <div id="status" class="status" role="status" aria-live="polite">Paste a link to begin.</div>
 
     <div id="resultBlock" hidden>
-      <label for="result">Generated X-friendly link</label>
+      <div class="mode" aria-label="Preview mode">
+        <input type="radio" name="mode" id="modeReliable" value="reliable" checked>
+        <label for="modeReliable"><strong>Reliable</strong><span>Current spotify.link fix · recommended</span></label>
+        <input type="radio" name="mode" id="modeClean" value="clean">
+        <label for="modeClean"><strong>Cleaner</strong><span>Direct Spotify URL · experimental</span></label>
+      </div>
+      <label id="resultLabel" for="result">Generated X-friendly link</label>
       <textarea id="result" readonly></textarea>
       <div class="actions">
         <a id="postX" class="button" href="#" target="_blank" rel="noopener noreferrer">Post on X</a>
         <button id="copy" class="secondary" type="button">Copy link</button>
         <button id="clear" class="secondary" type="button">Clear</button>
       </div>
-      <div class="guide">
-        <strong>To trigger the preview:</strong> in X, type your caption directly against <code>https</code>, then press <strong>Space once</strong>.
-        <div class="demo">my captionhttps://spotify.link/… → my caption https://spotify.link/…</div>
-      </div>
+      <div id="guide" class="guide"></div>
     </div>
 
     <div class="trust">No login · no tracking · nothing stored · not affiliated with Spotify or X</div>
@@ -54,7 +57,7 @@
 <script>
 (() => {
   'use strict';
-  const input=document.getElementById('spotify'),status=document.getElementById('status'),resultBlock=document.getElementById('resultBlock'),result=document.getElementById('result'),postX=document.getElementById('postX'),copy=document.getElementById('copy'),clear=document.getElementById('clear');
+  const input=document.getElementById('spotify'),status=document.getElementById('status'),resultBlock=document.getElementById('resultBlock'),result=document.getElementById('result'),resultLabel=document.getElementById('resultLabel'),postX=document.getElementById('postX'),copy=document.getElementById('copy'),clear=document.getElementById('clear'),guide=document.getElementById('guide'),modeReliable=document.getElementById('modeReliable'),modeClean=document.getElementById('modeClean');
   const allowed=new Set(['track','album','playlist','artist','show','episode']);
 
   function normalizeSpotify(raw){
@@ -75,16 +78,30 @@
     return `https://spotify.link/content_linking?$deeplink_path=${e}&$fallback_url=${e}`;
   }
 
+  function selectedMode(){return modeClean.checked?'clean':'reliable';}
+
+  function setGuide(mode){
+    if(mode==='clean'){
+      resultLabel.textContent='Clean Spotify link';
+      guide.innerHTML='<strong>Cleaner mode:</strong> post the direct Spotify URL normally. If X does not refresh the card, try the same fresh-text + Space trick.<div class="demo">my captionhttps://open.spotify.com/… → my caption https://open.spotify.com/…</div>';
+    }else{
+      resultLabel.textContent='Generated X-friendly link';
+      guide.innerHTML='<strong>To trigger the preview:</strong> in X, type your caption directly against <code>https</code>, then press <strong>Space once</strong>.<div class="demo">my captionhttps://spotify.link/… → my caption https://spotify.link/…</div>';
+    }
+  }
+
   function render(){
     status.className='status';
     try{
       const canonical=normalizeSpotify(input.value);
       if(!canonical){resultBlock.hidden=true;result.value='';status.textContent='Paste a link to begin.';return;}
-      const out=wrap(canonical);
+      const mode=selectedMode();
+      const out=mode==='clean'?canonical:wrap(canonical);
       result.value=out;
       postX.href=`https://x.com/intent/post?text=${encodeURIComponent(out)}`;
       resultBlock.hidden=false;
-      status.textContent='Ready.';
+      setGuide(mode);
+      status.textContent=mode==='clean'?'Cleaner mode ready — prettier when X cooperates, but less reliable.':'Reliable mode ready — best chance of forcing the Spotify preview.';
     }catch(err){
       resultBlock.hidden=true;result.value='';status.className='status error';status.textContent=err.message||'Could not convert that link.';
     }
@@ -132,10 +149,14 @@
   input.addEventListener('input',render);
   input.addEventListener('paste',()=>setTimeout(render,0));
   copy.addEventListener('click',copyGenerated);
+  modeReliable.addEventListener('change',render);
+  modeClean.addEventListener('change',render);
   clear.addEventListener('click',()=>{input.value='';result.value='';resultBlock.hidden=true;status.className='status';status.textContent='Paste a link to begin.';input.focus();});
-  postX.addEventListener('click',()=>{status.textContent='In X: type fresh text directly before https, then press Space once.';});
+  postX.addEventListener('click',()=>{status.textContent=selectedMode()==='clean'?'Posting the clean Spotify URL. If X does not refresh it, try the fresh-text + Space trick.':'In X: type fresh text directly before https, then press Space once.';});
 
-  const preset=new URLSearchParams(location.search).get('url');
+  const params=new URLSearchParams(location.search);
+  if(params.get('mode')==='clean')modeClean.checked=true;
+  const preset=params.get('url');
   if(preset){input.value=preset;render();}
 })();
 </script>
